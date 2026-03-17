@@ -78,6 +78,46 @@ prisma/
 - Nomenclatura de arquivos: minúsculas com hifens (ex: `user-profile.tsx`)
 - Nomenclatura de componentes: PascalCase (ex: `UserProfile`)
 
+### Hooks do Next.js
+
+**IMPORTANTE: `useSearchParams()` requer Suspense boundary**
+
+Quando usar `useSearchParams()` em uma página, você DEVE envolver o componente em um `Suspense` para evitar erros de build:
+
+```typescript
+'use client';
+
+import { useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
+
+// Componente interno que usa useSearchParams
+function MyPageContent() {
+  const searchParams = useSearchParams();
+  const token = searchParams.get('token');
+
+  return <div>{token}</div>;
+}
+
+// Componente principal exportado com Suspense
+export default function MyPage() {
+  return (
+    <Suspense fallback={<div>Carregando...</div>}>
+      <MyPageContent />
+    </Suspense>
+  );
+}
+```
+
+**Hooks que NÃO precisam de Suspense:**
+
+- ✅ `useRouter()` - Navegação programática
+- ✅ `usePathname()` - Caminho atual da URL
+- ✅ `useParams()` - Parâmetros de rota dinâmica
+
+**Hooks que PRECISAM de Suspense:**
+
+- ⚠️ `useSearchParams()` - Query parameters da URL (?param=value)
+
 ### Estilização
 
 - **Tailwind CSS 4**: Use classes utilitárias do Tailwind

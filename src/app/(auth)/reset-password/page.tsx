@@ -16,7 +16,7 @@ import { authClient } from '@/src/lib/auth-client';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { CheckCircle2, KeyRound, XCircle } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -40,7 +40,8 @@ const formSchema = z
 type ResetPasswordForm = z.infer<typeof formSchema>;
 type PageStatus = 'form' | 'loading' | 'success' | 'error';
 
-export default function ResetPasswordPage() {
+// Componente interno que usa useSearchParams
+function ResetPasswordContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { setHeader } = useAuthLayout();
@@ -245,5 +246,25 @@ export default function ResetPasswordPage() {
         )}
       </CardContent>
     </>
+  );
+}
+
+// Componente principal exportado com Suspense
+export default function ResetPasswordPage() {
+  return (
+    <Suspense
+      fallback={
+        <CardContent>
+          <div className="flex flex-col items-center space-y-4 py-8">
+            <Spinner className="h-12 w-12 text-purple-500" />
+            <p className="text-center text-sm text-muted-foreground">
+              Carregando...
+            </p>
+          </div>
+        </CardContent>
+      }
+    >
+      <ResetPasswordContent />
+    </Suspense>
   );
 }
