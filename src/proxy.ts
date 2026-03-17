@@ -1,3 +1,4 @@
+import { getSessionCookie } from 'better-auth/cookies';
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
@@ -9,13 +10,14 @@ const AUTH_PATHS = ['/sign-in', '/sign-up'];
 
 export function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
-  const sessionToken = request.cookies.get('better-auth.session_token');
+  const sessionCookie = getSessionCookie(request);
+  // const sessionToken = request.cookies.get('better-auth.session_token');
 
   // Verifica se a rota é pública
   const isPublicPath = PUBLIC_PATHS.includes(pathname);
 
   // Se não tem token de sessão e não está em rota pública, redireciona para sign-in
-  if (!sessionToken && !isPublicPath) {
+  if (!sessionCookie && !isPublicPath) {
     const signInUrl = new URL('/sign-in', request.url);
     return NextResponse.redirect(signInUrl);
   }

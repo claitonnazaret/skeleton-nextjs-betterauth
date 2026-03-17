@@ -20,22 +20,19 @@ export default function Page({
     return slug;
   }
 
-  function handleSignOut() {
+  async function handleSignOut() {
     setLoading(true);
-    authClient.signOut({
-      fetchOptions: {
-        onSuccess: () => {
-          toast.success('Logout realizado com sucesso!');
-          router.replace('/sign-in');
-        },
-        error: (error: Error) => {
-          toast.error('Erro ao realizar logout: ' + error.message);
-        },
-        finally: () => {
-          setLoading(false);
-        },
-      },
-    });
+    const { data, error } = await authClient.signOut();
+
+    if (!data) {
+      toast.error('Erro ao realizar logout: ' + error.message);
+    }
+
+    if (data) {
+      toast.success('Logout realizado com sucesso!');
+      router.replace('/sign-in');
+    }
+    setLoading(false);
   }
   return (
     <div>
