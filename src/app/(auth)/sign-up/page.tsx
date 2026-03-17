@@ -2,13 +2,7 @@
 
 import { InputFormField, PasswordFormField } from '@/src/components/forms';
 import { Button } from '@/src/components/ui/button';
-import {
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/src/components/ui/card';
+import { CardContent, CardFooter } from '@/src/components/ui/card';
 import { authClient } from '@/src/lib/auth-client';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
@@ -61,6 +55,7 @@ export default function Page() {
         name,
         email,
         password,
+        callbackURL: '/verify-email',
       });
 
       if (error) {
@@ -69,8 +64,7 @@ export default function Page() {
       }
 
       if (data) {
-        toast.success('Cadastro realizado com sucesso!');
-        // Redireciona para login após cadastro bem-sucedido
+        toast.success('Verifique seu e-mail para ativar sua conta 📩');
         router.push('/sign-in');
       }
     } catch (error) {
@@ -83,12 +77,6 @@ export default function Page() {
 
   return (
     <>
-      <CardHeader>
-        <CardTitle>Cadastre-se</CardTitle>
-        <CardDescription>
-          Crie uma conta para acessar o conteúdo exclusivo do nosso site.
-        </CardDescription>
-      </CardHeader>
       <CardContent>
         <FormProvider {...form}>
           <form

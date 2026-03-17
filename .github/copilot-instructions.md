@@ -39,7 +39,9 @@ src/
 │   ├── page.tsx            # Página inicial
 │   └── globals.css         # Estilos globais com Tailwind
 ├── components/
+│   ├── forms/              # Componentes de formulário personalizados
 │   └── ui/                 # Componentes shadcn/ui (não modificar diretamente)
+├── context/                # Contexts e Providers globais
 ├── hooks/                  # Hooks customizados do React
 └── lib/                    # Utilitários e configurações
     ├── auth.ts             # Configuração do Better Auth no servidor
@@ -99,6 +101,9 @@ import { Card } from '@/src/components/ui/card';
 // Use aliases de caminho consistentemente
 import { cn } from '@/src/lib/utils';
 import { authClient } from '@/src/lib/auth-client';
+
+// Importe contexts sempre de @/src/context
+import { MyProvider } from '@/src/context/my-provider';
 ```
 
 ## Configuração do Better Auth
@@ -137,6 +142,12 @@ await authClient.signUp.email({ email, password, name });
 
 // Logout
 await authClient.signOut();
+
+// Solicitar redefinição de senha
+await authClient.requestPasswordReset({ email, redirectTo: '/reset-password' });
+
+// Redefinir senha com token
+await authClient.resetPassword({ newPassword, token });
 
 // Obter sessão
 const { data: session } = authClient.useSession();
@@ -234,6 +245,228 @@ DATABASE_URL=postgresql://user:password@localhost:5432/dbname
 2. Não edite manualmente arquivos em `src/components/ui/` (são auto-gerados)
 3. Componha componentes shadcn em `src/components/` para componentes customizados
 
+### Ao Criar Contexts e Providers
+
+**OBRIGATÓRIO: Siga esta estrutura para contexts:**
+
+1. **Localização**: Todos os contexts devem ser criados em `src/context/`
+2. **Nomenclatura**: Use kebab-case para arquivos (ex: `auth-context.tsx`, `theme-provider.tsx`)
+3. **Importação**: Sempre use o alias `@/src/context/` para importar
+4. **Estrutura do arquivo**:
+
+```typescript
+'use client';
+
+import { createContext, useContext, useState, type ReactNode } from 'react';
+
+// 1. Defina o tipo do contexto
+interface MyContextType {
+  value: string;
+  setValue: (value: string) => void;
+}
+
+// 2. Crie o contexto com valor padrão
+const MyContext = createContext<MyContextType | undefined>(undefined);
+
+// 3. Crie o Provider
+export function MyProvider({ children }: { children: ReactNode }) {
+  const [value, setValue] = useState<string>('');
+
+  return (
+    <MyContext.Provider value={{ value, setValue }}>
+      {children}
+    </MyContext.Provider>
+  );
+}
+
+// 4. Crie o hook customizado
+export function useMyContext() {
+  const context = useContext(MyContext);
+  if (context === undefined) {
+    throw new Error('useMyContext deve ser usado dentro de MyProvider');
+  }
+  return context;
+}
+```
+
+**Uso do Provider:**
+
+```typescript
+// app/layout.tsx ou onde necessário
+import { MyProvider } from '@/src/context/my-provider';
+
+export default function Layout({ children }) {
+  return (
+    <MyProvider>
+      {children}
+    </MyProvider>
+  );
+}
+```
+
+**Uso do hook:**
+
+```typescript
+'use client';
+import { useMyContext } from '@/src/context/my-provider';
+
+export function MyComponent() {
+  const { value, setValue } = useMyContext();
+  // ...
+}
+```
+
+### Ao Criar Formulários
+
+**OBRIGATÓRIO: Todos os formulários devem seguir este padrão:**
+
+1. **Usar React Hook Form com FormProvider**:
+   - Importe `useForm` e `FormProvider` de `react-hook-form`
+   - Configure o form com `zodResolver` para validação
+   - Envolva o formulário com `<FormProvider {...form}>`
+
+2. **Controlar estado de loading**:
+   - Use `useState` para controlar loading (`const [loading, setLoading] = useState(false)`)
+   - Desabilite o botão de submit durante loading (`disabled={loading}`)
+   - Mostre feedback visual (spinner, texto "Carregando...")
+
+3. **Usar componentes da pasta `components/forms`**:
+   - `InputFormField` - Campos de texto
+   - `PasswordFormField` - Campos de senha com toggle de visibilidade
+   - `CheckboxFormField` - Checkboxes
+   - `RadioGroupFormField` - Grupos de radio buttons
+   - `ComboboxFormField` - Comboboxes/Selects com busca
+   - `DatePickerFormField` - Seletor de data
+   - `MaskFormField` - Campos com máscara (CPF, telefone, etc.)
+
+4. **Validações com Zod**:
+   - Defina um `formSchema` usando `z.object()` do Zod
+   - Use mensagens de erro em português
+   - Use `z.infer<typeof formSchema>` para tipar os dados do formulário
+
+**Exemplo de implementação completa:**
+
+```typescript
+'use client';
+
+import { InputFormField, PasswordFormField } from '@/src/components/forms';
+import { Button } from '@/src/components/ui/button';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useState } from 'react';
+import { FormProvider, useForm } from 'react-hook-form';
+import { toast } from 'sonner';
+import { z } from 'zod';
+
+const formSchema = z.object({
+  email: z.string().email({ message: 'Email inválido' }),
+  password: z
+    .string()
+    .min(8, { message: 'Senha deve ter no mínimo 8 caracteres' }),
+});
+
+export function MyForm() {
+  const [loading, setLoading] = useState(false);
+
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+    },
+  });
+
+  async function onSubmit(data: z.infer<typeof formSchema>) {
+    try {
+      setLoading(true);
+      // Lógica de submissão
+      await api.submit(data);
+      toast.success('Dados enviados com sucesso!');
+    } catch (error) {
+      toast.error('Erro ao enviar dados');
+      console.error('Erro:', error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <FormProvider {...form}>
+      <form
+        onSubmit={form.handleSubmit(onSubmit)}
+        className="flex flex-col gap-6"
+      >
+        <InputFormField
+          control={form.control}
+          name="email"
+          label="Email"
+          type="email"
+          placeholder="seu@email.com"
+          disabled={loading}
+          required
+        />
+        <PasswordFormField
+          control={form.control}
+          name="password"
+          label="Senha"
+          placeholder="••••••••"
+          disabled={loading}
+          required
+        />
+        <Button type="submit" disabled={loading}>
+          {loading ? 'Enviando...' : 'Enviar'}
+        </Button>
+      </form>
+    </FormProvider>
+  );
+}
+```
+
+**NÃO FAÇA:**
+
+- ❌ Usar componentes `Field`, `FieldLabel`, `FieldError`, `Input` diretamente
+- ❌ Usar `form.register()` manualmente
+- ❌ Criar formulários sem validação Zod
+- ❌ Usar validação inline sem schema
+- ❌ Não controlar estado de loading
+- ❌ Não desabilitar botões durante submissão
+- ❌ Não usar toast para feedback
+
+5. **Exibir mensagens com Toast**:
+   - **SEMPRE** use `toast` do `sonner` para exibir mensagens de feedback ao usuário
+   - Importe com `import { toast } from 'sonner'`
+   - Use `toast.success()` para mensagens de sucesso
+   - Use `toast.error()` para mensagens de erro
+   - Use `toast.info()` para mensagens informativas
+   - **NÃO** use componentes `Alert` ou estados visuais para erros de formulário
+   - Mantenha as mensagens curtas e diretas em português
+
+**Exemplo de uso do toast:**
+
+```typescript
+'use client';
+
+import { toast } from 'sonner';
+
+// Sucesso
+toast.success('Operação realizada com sucesso!');
+
+// Erro
+toast.error('Erro ao processar sua solicitação');
+
+// Informação
+toast.info('Verifique seu email');
+
+// Em formulários
+async function onSubmit(data: FormData) {
+  try {
+    await api.submit(data);
+    toast.success('Dados salvos com sucesso!');
+  } catch (error) {
+    toast.error('Erro ao salvar dados');
+  }
+}
+```
+
 ### Ao Trabalhar com Autenticação
 
 1. **Server Components**: Use `auth.api.getSession()` com headers
@@ -241,6 +474,83 @@ DATABASE_URL=postgresql://user:password@localhost:5432/dbname
 3. **Rotas de API**: Acesse a sessão via `auth.api.getSession({ headers })`
 4. **Rotas protegidas**: Verifique a sessão e redirecione se não autenticado
 5. **Acesso baseado em roles**: Estenda o model User com roles se necessário
+
+### Ao Criar Páginas (Telas)
+
+**OBRIGATÓRIO: Siga este padrão para páginas:**
+
+1. **Estrutura de pastas**: Use as convenções do App Router
+   - Páginas públicas: `app/(public)/minha-pagina/page.tsx`
+   - Páginas autenticadas: `app/(auth)/perfil/page.tsx`
+   - Páginas do dashboard: `app/[userId]/(dashboard)/config/page.tsx`
+
+2. **Estrutura do arquivo de página**:
+
+```typescript
+'use client'; // Se necessário interatividade
+
+import { Button } from '@/src/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/src/components/ui/card';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
+
+/**
+ * Página: Nome da Página
+ * Descrição: O que esta página faz
+ *
+ * Rota: /caminho-da-rota
+ */
+export default function MinhaPage() {
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    // Lógica de inicialização
+  }, []);
+
+  return (
+    <div className="container mx-auto py-8">
+      <Card>
+        <CardHeader>
+          <CardTitle>Título da Página</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {/* Conteúdo da página */}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+```
+
+3. **Páginas protegidas (Server Component)**:
+
+```typescript
+import { auth } from '@/src/lib/auth';
+import { redirect } from 'next/navigation';
+import { headers } from 'next/headers';
+
+export default async function ProtectedPage() {
+  const session = await auth.api.getSession({
+    headers: await headers()
+  });
+
+  if (!session) {
+    redirect('/sign-in');
+  }
+
+  return (
+    <div>
+      <h1>Olá, {session.user.name}</h1>
+    </div>
+  );
+}
+```
+
+4. **Convenções de layout**:
+   - Use componentes `Card` do shadcn/ui para containers
+   - Mantenha espaçamento consistente (`py-8`, `px-4`, `gap-6`)
+   - Use `container mx-auto` para centralizar conteúdo
+   - Adicione comentários descritivos no topo do arquivo
 
 ### Tratamento de Erros
 
@@ -261,6 +571,7 @@ try {
 } catch (error) {
   // Trate erros de autenticação
   console.error('Erro ao fazer login:', error);
+  toast.error('Erro ao fazer login');
 }
 ```
 

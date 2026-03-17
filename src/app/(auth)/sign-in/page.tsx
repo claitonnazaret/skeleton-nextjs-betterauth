@@ -6,13 +6,7 @@ import {
   PasswordFormField,
 } from '@/src/components/forms';
 import { Button } from '@/src/components/ui/button';
-import {
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/src/components/ui/card';
+import { CardContent, CardFooter } from '@/src/components/ui/card';
 import { authClient } from '@/src/lib/auth-client';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
@@ -75,12 +69,6 @@ export default function Page() {
 
   return (
     <>
-      <CardHeader>
-        <CardTitle>Login</CardTitle>
-        <CardDescription>
-          Faça login para acessar o conteúdo exclusivo do nosso site.
-        </CardDescription>
-      </CardHeader>
       <CardContent>
         <FormProvider {...form}>
           <form
@@ -102,11 +90,19 @@ export default function Page() {
               placeholder="••••••••"
               required
             />
-            <CheckboxFormField
-              control={form.control}
-              name="rememberMe"
-              label="Lembrar-me"
-            />
+            <div className="flex items-center justify-between">
+              <CheckboxFormField
+                control={form.control}
+                name="rememberMe"
+                label="Lembrar-me"
+              />
+              <Link
+                href="/forgot-password"
+                className="text-sm text-primary hover:underline"
+              >
+                Esqueci minha senha
+              </Link>
+            </div>
             <Button type="submit" disabled={loading} className="w-full">
               {loading ? 'Entrando...' : 'Entrar'}
             </Button>
