@@ -9,25 +9,77 @@ import {
   CardHeader,
   CardTitle,
 } from '@/src/components/ui/card';
+import { authClient } from '@/src/lib/auth-client';
 import { zodResolver } from '@hookform/resolvers/zod';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 import { z } from 'zod';
 
-const formSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(8),
-  confirmPassword: z.string().min(8),
-});
+const formSchema = z
+  .object({
+    name: z
+      .string()
+      .min(2, { message: 'Nome deve ter no mínimo 2 caracteres' }),
+    email: z.string().email({ message: 'Email inválido' }),
+    password: z
+      .string()
+      .min(8, { message: 'Senha deve ter no mínimo 8 caracteres' }),
+    confirmPassword: z
+      .string()
+      .min(8, { message: 'Confirmação de senha obrigatória' }),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: 'As senhas não coincidem',
+    path: ['confirmPassword'],
+  });
 
 export default function Page() {
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      email: 'claitonnazaret@gmail.com',
-      password: '12345678',
-      confirmPassword: '12345678',
+      name: '',
+      email: '',
+      password: '',
+      confirmPassword: '',
     },
   });
+
+  async function handleSignUp({
+    name,
+    email,
+    password,
+  }: z.infer<typeof formSchema>) {
+    try {
+      setLoading(true);
+      const { data, error } = await authClient.signUp.email({
+        name,
+        email,
+        password,
+      });
+
+      if (error) {
+        toast.error(error.message || 'Erro ao realizar cadastro');
+        return;
+      }
+
+      if (data) {
+        toast.success('Cadastro realizado com sucesso!');
+        // Redireciona para login após cadastro bem-sucedido
+        router.push('/sign-in');
+      }
+    } catch (error) {
+      toast.error('Erro inesperado ao realizar cadastro');
+      console.error('Erro no cadastro:', error);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <>
@@ -39,20 +91,52 @@ export default function Page() {
       </CardHeader>
       <CardContent>
         <FormProvider {...form}>
-          <InputFormField control={form.control} name="email" label="Email" />
-          <PasswordFormField
-            control={form.control}
-            name="password"
-            label="Senha"
-          />
+          <form
+            onSubmit={form.handleSubmit(handleSignUp)}
+            className="flex flex-col gap-6"
+          >
+            <InputFormField
+              control={form.control}
+              name="name"
+              label="Nome completo"
+              placeholder="Seu nome"
+              required
+            />
+            <InputFormField
+              control={form.control}
+              name="email"
+              label="Email"
+              type="email"
+              placeholder="seu@email.com"
+              required
+            />
+            <PasswordFormField
+              control={form.control}
+              name="password"
+              label="Senha"
+              placeholder="••••••••"
+              required
+            />
+            <PasswordFormField
+              control={form.control}
+              name="confirmPassword"
+              label="Confirmar senha"
+              placeholder="••••••••"
+              required
+            />
+            <Button type="submit" disabled={loading} className="w-full">
+              {loading ? 'Cadastrando...' : 'Cadastrar'}
+            </Button>
+          </form>
         </FormProvider>
       </CardContent>
-      <CardFooter className="flex justify-end">
-        <Button
-          onClick={() => form.handleSubmit((data) => console.log(data))()}
-        >
-          Cadastro
-        </Button>
+      <CardFooter className="flex flex-col gap-2">
+        <p className="text-sm text-muted-foreground text-center">
+          Já tem uma conta?{' '}
+          <Link href="/sign-in" className="text-primary hover:underline">
+            Faça login
+          </Link>
+        </p>
       </CardFooter>
     </>
   );

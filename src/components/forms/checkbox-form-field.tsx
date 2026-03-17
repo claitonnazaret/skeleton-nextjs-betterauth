@@ -9,6 +9,7 @@ import {
   FieldLabel,
 } from '@/src/components/ui/field';
 import { Label } from '@/src/components/ui/label';
+import { cn } from '@/src/lib/utils';
 import {
   Controller,
   type Control,
@@ -30,7 +31,7 @@ interface CheckboxFormFieldProps<
   name: TName;
   label?: string;
   description?: string;
-  options: CheckboxOption[];
+  options?: CheckboxOption[];
   disabled?: boolean;
   required?: boolean;
   className?: string;
@@ -57,66 +58,90 @@ export function CheckboxFormField<
       name={name}
       render={({ field, fieldState }) => (
         <Field className={className} data-invalid={fieldState.invalid}>
-          {label && (
+          {label && options && (
             <FieldLabel>
               {label}
               {required && <span className="text-destructive ml-1">*</span>}
             </FieldLabel>
           )}
-          {description && <FieldDescription>{description}</FieldDescription>}
-          <FieldGroup
-            data-slot="checkbox-group"
-            className={
-              orientation === 'horizontal' ? 'flex flex-wrap gap-4' : 'gap-3'
-            }
-          >
-            {options.map((option) => {
-              const isChecked = Array.isArray(field.value)
-                ? field.value.includes(option.value)
-                : field.value === option.value;
+          {description && options && (
+            <FieldDescription>{description}</FieldDescription>
+          )}
 
-              return (
-                <Field
-                  key={option.value}
-                  orientation="horizontal"
-                  data-invalid={fieldState.invalid}
+          {/* Checkbox único quando options não está definido */}
+          {!options ? (
+            <Field orientation="horizontal" data-invalid={fieldState.invalid}>
+              <Checkbox
+                id={field.name}
+                name={field.name}
+                checked={!!field.value}
+                disabled={disabled}
+                aria-invalid={fieldState.invalid}
+                onCheckedChange={(checked) => {
+                  field.onChange(checked);
+                }}
+              />
+              {label && (
+                <FieldLabel
+                  htmlFor={field.name}
+                  className="text-sm font-normal cursor-pointer"
                 >
-                  <Checkbox
-                    id={`${field.name}-${option.value}`}
-                    name={field.name}
-                    checked={isChecked}
-                    disabled={disabled}
-                    aria-invalid={fieldState.invalid}
-                    onCheckedChange={(checked) => {
-                      if (Array.isArray(field.value)) {
-                        const updatedValue = checked
-                          ? [...field.value, option.value]
-                          : field.value.filter(
-                              (v: string) => v !== option.value
-                            );
-                        field.onChange(updatedValue);
-                      } else {
-                        field.onChange(checked ? option.value : '');
-                      }
-                    }}
-                  />
-                  <div className="space-y-1 leading-none">
-                    <Label
-                      htmlFor={`${field.name}-${option.value}`}
-                      className="text-sm font-normal cursor-pointer"
-                    >
-                      {option.label}
-                    </Label>
-                    {option.description && (
-                      <p className="text-muted-foreground text-sm">
-                        {option.description}
-                      </p>
-                    )}
-                  </div>
-                </Field>
-              );
-            })}
-          </FieldGroup>
+                  {label}
+                </FieldLabel>
+              )}
+            </Field>
+          ) : (
+            /* Grupo de checkboxes quando options está definido */
+            <FieldGroup
+              data-slot="checkbox-group"
+              className={cn(
+                'flex w-full',
+                orientation === 'horizontal' ? 'flex-row' : 'flex-col'
+              )}
+            >
+              {options.map((option) => {
+                const isChecked = Array.isArray(field.value)
+                  ? field.value.includes(option.value)
+                  : field.value === option.value;
+
+                return (
+                  <Field
+                    key={option.value}
+                    orientation="horizontal"
+                    data-invalid={fieldState.invalid}
+                  >
+                    <Checkbox
+                      id={`${field.name}-${option.value}`}
+                      name={field.name}
+                      checked={isChecked}
+                      disabled={disabled}
+                      aria-invalid={fieldState.invalid}
+                      onCheckedChange={(checked) => {
+                        if (Array.isArray(field.value)) {
+                          const updatedValue = checked
+                            ? [...field.value, option.value]
+                            : field.value.filter(
+                                (v: string) => v !== option.value
+                              );
+                          field.onChange(updatedValue);
+                        } else {
+                          field.onChange(checked ? option.value : '');
+                        }
+                      }}
+                    />
+                    <div className="space-y-1 leading-none">
+                      <Label
+                        htmlFor={`${field.name}-${option.value}`}
+                        className="text-sm font-normal cursor-pointer"
+                      >
+                        {option.label}
+                      </Label>
+                    </div>
+                  </Field>
+                );
+              })}
+            </FieldGroup>
+          )}
           {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
         </Field>
       )}
