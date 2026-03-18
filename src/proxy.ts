@@ -3,10 +3,14 @@ import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
 // Rotas públicas que não requerem autenticação
-const PUBLIC_PATHS = ['/', '/sign-in', '/sign-up'];
-
-// Rotas de autenticação (usuários autenticados não devem acessar)
-const AUTH_PATHS = ['/sign-in', '/sign-up'];
+const PUBLIC_PATHS = [
+  '/',
+  '/sign-in',
+  '/sign-up',
+  '/forgot-password',
+  '/verify-email',
+  '/reset-password',
+];
 
 export function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
@@ -18,6 +22,7 @@ export function proxy(request: NextRequest) {
 
   // Se não tem token de sessão e não está em rota pública, redireciona para sign-in
   if (!sessionCookie && !isPublicPath) {
+    console.log('Usuário não autenticado, redirecionando para sign-in');
     const signInUrl = new URL('/sign-in', request.url);
     return NextResponse.redirect(signInUrl);
   }
