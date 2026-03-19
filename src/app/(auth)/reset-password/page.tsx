@@ -143,109 +143,102 @@ function ResetPasswordContent() {
   // Renderiza erro se não houver token
   if (status === 'error' && !token) {
     return (
-      <>
-        <CardContent>
-          <Button
-            onClick={() => router.push('/forgot-password')}
-            className="w-full"
-          >
-            Solicitar Novo Link
-          </Button>
-        </CardContent>
-      </>
+      <div className="grid gap-4">
+        <Button
+          onClick={() => router.push('/forgot-password')}
+          className="w-full"
+        >
+          Solicitar Novo Link
+        </Button>
+      </div>
     );
   }
 
   return (
-    <>
-      <CardContent>
-        {/* Form State */}
-        {status === 'form' && (
-          <FormProvider {...form}>
-            <form
-              onSubmit={form.handleSubmit(onSubmit)}
-              className="flex flex-col gap-6"
-            >
-              <PasswordFormField
-                control={form.control}
-                name="password"
-                label="Nova Senha"
-                placeholder="Digite sua nova senha"
-                required
-              />
-              <PasswordFormField
-                control={form.control}
-                name="confirmPassword"
-                label="Confirmar Senha"
-                placeholder="Confirme sua nova senha"
-                required
-              />
+    <div className="grid gap-6">
+      {/* Form State */}
+      {status === 'form' && (
+        <FormProvider {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
+            <PasswordFormField
+              control={form.control}
+              name="password"
+              label="Nova Senha"
+              placeholder="Digite sua nova senha"
+              required
+            />
+            <PasswordFormField
+              control={form.control}
+              name="confirmPassword"
+              label="Confirmar Senha"
+              placeholder="Confirme sua nova senha"
+              required
+            />
 
-              <Button type="submit" className="w-full">
-                Redefinir Senha
-              </Button>
-            </form>
-          </FormProvider>
-        )}
+            <Button type="submit" className="w-full">
+              Redefinir Senha
+            </Button>
+          </form>
+        </FormProvider>
+      )}
 
-        {/* Loading State */}
-        {status === 'loading' && (
-          <div className="flex flex-col items-center space-y-4 py-8">
-            <Spinner className="h-12 w-12 text-purple-500" />
-            <p className="text-center text-sm text-muted-foreground">
-              Redefinindo sua senha...
+      {/* Loading State */}
+      {status === 'loading' && (
+        <div className="flex flex-col items-center space-y-4 py-8">
+          <Spinner className="h-12 w-12 text-purple-500" />
+          <p className="text-center text-sm text-muted-foreground">
+            Redefinindo sua senha...
+          </p>
+        </div>
+      )}
+
+      {/* Success State */}
+      {status === 'success' && (
+        <div className="space-y-4">
+          <div className="flex justify-center">
+            <CheckCircle2 className="h-16 w-16 text-green-500" />
+          </div>
+          <div className="space-y-2 text-center">
+            <p className="text-lg font-medium text-green-700">
+              Senha redefinida com sucesso!
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Você será redirecionado para o login em breve...
             </p>
           </div>
-        )}
+          <Button onClick={() => router.push('/sign-in')} className="w-full">
+            Ir para Login
+          </Button>
+        </div>
+      )}
 
-        {/* Success State */}
-        {status === 'success' && (
-          <div className="space-y-4">
-            <div className="flex justify-center">
-              <CheckCircle2 className="h-16 w-16 text-green-500" />
-            </div>
-            <div className="space-y-2 text-center">
-              <p className="text-lg font-medium text-green-700">
-                Senha redefinida com sucesso!
-              </p>
-              <p className="text-sm text-muted-foreground">
-                Você será redirecionado para o login em breve...
-              </p>
-            </div>
-            <Button onClick={() => router.push('/sign-in')} className="w-full">
-              Ir para Login
+      {/* Error State */}
+      {status === 'error' && token && (
+        <div className="space-y-4">
+          <div className="flex justify-center">
+            <XCircle className="h-16 w-16 text-red-500" />
+          </div>
+          <div className="space-y-2 text-center">
+            <p className="text-lg font-medium text-red-700">
+              Falha ao Redefinir
+            </p>
+            <p className="text-sm text-muted-foreground">{errorMessage}</p>
+          </div>
+          <div className="space-y-2">
+            <Button onClick={() => setStatus('form')} className="w-full">
+              Tentar Novamente
+            </Button>
+            <Button
+              onClick={() => router.push('/forgot-password')}
+              variant="outline"
+              className="w-full"
+            >
+              Solicitar Novo Link
             </Button>
           </div>
-        )}
-
-        {/* Error State */}
-        {status === 'error' && token && (
-          <div className="space-y-4">
-            <div className="flex justify-center">
-              <XCircle className="h-16 w-16 text-red-500" />
-            </div>
-            <div className="space-y-2 text-center">
-              <p className="text-lg font-medium text-red-700">
-                Falha ao Redefinir
-              </p>
-              <p className="text-sm text-muted-foreground">{errorMessage}</p>
-            </div>
-            <div className="space-y-2">
-              <Button onClick={() => setStatus('form')} className="w-full">
-                Tentar Novamente
-              </Button>
-              <Button
-                onClick={() => router.push('/forgot-password')}
-                variant="outline"
-                className="w-full"
-              >
-                Solicitar Novo Link
-              </Button>
-            </div>
-          </div>
-        )}
-      </CardContent>
-    </>
+        </div>
+      )}
+    </div>
   );
 }
 

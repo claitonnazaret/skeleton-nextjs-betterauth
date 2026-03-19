@@ -6,7 +6,7 @@ import {
   ComboboxEmpty,
   ComboboxInput,
   ComboboxItem,
-  ComboboxValue,
+  ComboboxList,
 } from '@/src/components/ui/combobox';
 import {
   Field,
@@ -14,6 +14,7 @@ import {
   FieldError,
   FieldLabel,
 } from '@/src/components/ui/field';
+import type React from 'react';
 import {
   Controller,
   type Control,
@@ -24,39 +25,51 @@ import {
 interface ComboboxOption {
   label: string;
   value: string;
+  description?: string;
 }
 
-interface ComboBoxFormFieldProps<
+interface ComboboxFormFieldProps<
   TFieldValues extends FieldValues = FieldValues,
   TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
+> extends Omit<
+  React.ComponentProps<typeof Combobox>,
+  'name' | 'value' | 'onValueChange' | 'items' | 'itemToStringValue'
 > {
+  // Props do React Hook Form
   control: Control<TFieldValues>;
   name: TName;
+  // Props específicas do componente
   label?: string;
   placeholder?: string;
   description?: string;
   options: ComboboxOption[];
-  disabled?: boolean;
   required?: boolean;
+  // Props do Field
   className?: string;
+  // Props do ComboboxEmpty
   emptyMessage?: string;
+  showEmpty?: boolean;
 }
 
-export function ComboBoxFormField<
+export function ComboboxFormField<
   TFieldValues extends FieldValues = FieldValues,
   TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
 >({
+  // Props do React Hook Form
   control,
   name,
+  // Props específicas do componente
   label,
   placeholder = 'Selecione uma opção',
   description,
   options,
-  disabled = false,
   required = false,
   className,
   emptyMessage = 'Nenhuma opção encontrada',
-}: ComboBoxFormFieldProps<TFieldValues, TName>) {
+  // Props herdadas do Combobox
+  disabled = false,
+  ...comboboxProps
+}: ComboboxFormFieldProps<TFieldValues, TName>) {
   return (
     <Controller
       control={control}
@@ -69,9 +82,13 @@ export function ComboBoxFormField<
               {required && <span className="text-destructive ml-1">*</span>}
             </FieldLabel>
           )}
+
           <Combobox
-            value={field.value || undefined}
-            onValueChange={(value) => field.onChange(value || '')}
+            {...comboboxProps}
+            name={field.name}
+            onValueChange={field.onChange}
+            items={options}
+            itemToStringValue={(option) => (option as ComboboxOption).label}
             disabled={disabled}
           >
             <ComboboxInput
@@ -84,11 +101,20 @@ export function ComboBoxFormField<
             />
             <ComboboxContent>
               <ComboboxEmpty>{emptyMessage}</ComboboxEmpty>
-              {options.map((option) => (
-                <ComboboxItem key={option.value} value={option.value}>
-                  <ComboboxValue>{option.label}</ComboboxValue>
-                </ComboboxItem>
-              ))}
+              <ComboboxList>
+                {(option: ComboboxOption) => (
+                  <ComboboxItem key={option.value} value={option}>
+                    <div className="flex flex-col gap-2">
+                      <span>{option.label}</span>
+                      {option.description && (
+                        <span className="text-xs text-muted-foreground">
+                          {option.description}
+                        </span>
+                      )}
+                    </div>
+                  </ComboboxItem>
+                )}
+              </ComboboxList>
             </ComboboxContent>
           </Combobox>
           {description && <FieldDescription>{description}</FieldDescription>}

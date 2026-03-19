@@ -12,7 +12,7 @@ export interface InputMaskedProps extends Omit<
   mask: string;
   maskPlaceholder?: string;
   placeholder?: string;
-  value?: string;
+  value?: string | number | readonly string[];
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
   className?: string;
 }
@@ -31,7 +31,7 @@ const InputMasked = forwardRef<HTMLInputElement, InputMaskedProps>(
     ref
   ) => {
     const [inputValue, setInputValue] = useState(
-      formatWithMask(value || '', mask)
+      formatWithMask(String(value || ''), mask)
     );
     const inputRef = useRef<HTMLInputElement>(null);
     const [selection, setSelection] = useState<{
@@ -52,7 +52,7 @@ const InputMasked = forwardRef<HTMLInputElement, InputMaskedProps>(
     };
 
     useEffect(() => {
-      const formattedValue = formatWithMask(value || '', mask);
+      const formattedValue = formatWithMask(String(value || ''), mask);
       if (formattedValue !== inputValue) {
         setInputValue(formattedValue);
       }

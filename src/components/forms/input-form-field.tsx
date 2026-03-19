@@ -7,6 +7,7 @@ import {
   FieldLabel,
 } from '@/src/components/ui/field';
 import { Input } from '@/src/components/ui/input';
+import type React from 'react';
 import {
   Controller,
   type Control,
@@ -17,31 +18,35 @@ import {
 interface InputFormFieldProps<
   TFieldValues extends FieldValues = FieldValues,
   TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
-> {
+> extends Omit<React.ComponentProps<'input'>, 'name' | 'id'> {
+  // Props do React Hook Form
   control: Control<TFieldValues>;
   name: TName;
+  // Props específicas do componente
   label?: string;
-  placeholder?: string;
   description?: string;
-  type?: 'text' | 'password' | 'email' | 'number' | 'tel' | 'url';
-  disabled?: boolean;
   required?: boolean;
-  className?: string;
 }
 
 export function InputFormField<
   TFieldValues extends FieldValues = FieldValues,
   TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
 >({
+  // Props do React Hook Form
   control,
   name,
+  // Props específicas do componente
   label,
-  placeholder,
   description,
+  required = false,
+  // Props do input nativo
+  className,
   type = 'text',
   disabled = false,
-  required = false,
-  className,
+  placeholder,
+  onChange,
+  onBlur,
+  ...inputProps // Todas as outras props do input HTML (onFocus, onKeyDown, onClick, etc)
 }: InputFormFieldProps<TFieldValues, TName>) {
   return (
     <Controller
@@ -57,11 +62,21 @@ export function InputFormField<
           )}
           <Input
             {...field}
+            {...inputProps} // Spread de todas as props herdadas do input
             id={field.name}
             type={type}
             placeholder={placeholder}
             disabled={disabled}
             aria-invalid={fieldState.invalid}
+            // Combinar handlers do React Hook Form com handlers customizados
+            onChange={(e) => {
+              field.onChange(e); // Handler do React Hook Form (obrigatório)
+              onChange?.(e); // Handler customizado (opcional)
+            }}
+            onBlur={(e) => {
+              field.onBlur(); // Handler do React Hook Form (obrigatório)
+              onBlur?.(e); // Handler customizado (opcional)
+            }}
           />
           {description && <FieldDescription>{description}</FieldDescription>}
           {fieldState.invalid && <FieldError errors={[fieldState.error]} />}

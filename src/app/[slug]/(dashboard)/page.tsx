@@ -13,6 +13,7 @@ export default function Page({
 }) {
   const [loading, setLoading] = useState(false);
   const { data } = authClient.useSession();
+  const { data: organization } = authClient.useActiveOrganization();
   const router = useRouter();
 
   async function getSlugName() {
@@ -39,6 +40,7 @@ export default function Page({
       <h2>Dashboard</h2>
       <h2>Slug: {getSlugName()}</h2>
       <p>Bem-vindo, {data?.user?.name}!</p>
+      <p>Organização, {organization?.name}!</p>
       <Button disabled={loading} variant="destructive" onClick={handleSignOut}>
         Sair
       </Button>

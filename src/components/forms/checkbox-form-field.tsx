@@ -36,6 +36,8 @@ interface CheckboxFormFieldProps<
   required?: boolean;
   className?: string;
   orientation?: 'horizontal' | 'vertical';
+  // Eventos customizados
+  onCheckedChange?: (checked: boolean | string | string[]) => void;
 }
 
 export function CheckboxFormField<
@@ -51,6 +53,7 @@ export function CheckboxFormField<
   required = false,
   className,
   orientation = 'vertical',
+  onCheckedChange, // Evento customizado
 }: CheckboxFormFieldProps<TFieldValues, TName>) {
   return (
     <Controller
@@ -79,6 +82,7 @@ export function CheckboxFormField<
                 aria-invalid={fieldState.invalid}
                 onCheckedChange={(checked) => {
                   field.onChange(checked);
+                  onCheckedChange?.(checked);
                 }}
               />
               {label && (
@@ -117,16 +121,19 @@ export function CheckboxFormField<
                       disabled={disabled}
                       aria-invalid={fieldState.invalid}
                       onCheckedChange={(checked) => {
+                        let updatedValue;
                         if (Array.isArray(field.value)) {
-                          const updatedValue = checked
+                          updatedValue = checked
                             ? [...field.value, option.value]
                             : field.value.filter(
                                 (v: string) => v !== option.value
                               );
                           field.onChange(updatedValue);
                         } else {
-                          field.onChange(checked ? option.value : '');
+                          updatedValue = checked ? option.value : '';
+                          field.onChange(updatedValue);
                         }
+                        onCheckedChange?.(updatedValue);
                       }}
                     />
                     <div className="space-y-1 leading-none">

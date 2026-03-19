@@ -35,6 +35,8 @@ interface RadioGroupFormFieldProps<
   required?: boolean;
   className?: string;
   orientation?: 'horizontal' | 'vertical';
+  // Eventos customizados
+  onValueChange?: (value: string) => void;
 }
 
 export function RadioGroupFormField<
@@ -50,6 +52,7 @@ export function RadioGroupFormField<
   required = false,
   className,
   orientation = 'vertical',
+  onValueChange, // Evento customizado
 }: RadioGroupFormFieldProps<TFieldValues, TName>) {
   return (
     <Controller
@@ -67,7 +70,10 @@ export function RadioGroupFormField<
           <RadioGroup
             name={field.name}
             value={field.value}
-            onValueChange={field.onChange}
+            onValueChange={(value) => {
+              field.onChange(value);
+              onValueChange?.(value);
+            }}
             disabled={disabled}
             className={
               orientation === 'horizontal'
