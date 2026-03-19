@@ -1,3 +1,5 @@
+import { TooltipProvider } from '@/src/components/ui/tooltip';
+import { ThemeProvider } from '@/src/context/theme-provider';
 import { cn } from '@/src/lib/utils';
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono, Roboto } from 'next/font/google';
@@ -27,12 +29,20 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={cn('font-sans', roboto.variable)}>
+    <html
+      lang="pt-BR"
+      className={cn('font-sans', roboto.variable)}
+      suppressHydrationWarning
+    >
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <main className="min-h-screen">{children}</main>
-        <Toaster position="top-center" />
+        <ThemeProvider>
+          <TooltipProvider>
+            <main className="min-h-screen">{children}</main>
+            <Toaster position="top-center" />
+          </TooltipProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
