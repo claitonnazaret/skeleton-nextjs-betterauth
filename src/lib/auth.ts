@@ -1,6 +1,7 @@
 import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { nextCookies } from 'better-auth/next-js';
+import { organization } from 'better-auth/plugins';
 import { sendPasswordResetEmail, sendVerificationEmail } from './email/resend';
 import prisma from './prisma';
 
@@ -10,8 +11,8 @@ export const auth = betterAuth({
   }),
   emailAndPassword: {
     enabled: true,
-    autoSignIn: false,
-    requireEmailVerification: true, // Altere para true se quiser forçar verificação
+    autoSignIn: true, // Login automático após cadastro para criar organização
+    requireEmailVerification: false, // Não bloqueia login, mas email é enviado
     sendResetPassword: async ({ user, url }) => {
       // Envia email de redefinição de senha
       await sendPasswordResetEmail(user.email, url, user.name);
@@ -28,7 +29,7 @@ export const auth = betterAuth({
     },
     sendOnSignUp: true, // Envia email automaticamente no cadastro
   },
-  plugins: [nextCookies()],
+  plugins: [nextCookies(), organization()],
   session: {
     expiresIn: 60 * 60 * 24 * 7, // 7 days
     updateAge: 60 * 60 * 24, // 1 day
@@ -38,10 +39,16 @@ export const auth = betterAuth({
     process.env.NEXT_PUBLIC_BASE_URL,
     process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined,
   ].filter(Boolean) as string[],
-  // Configuração adicional para as rotas de API
-  // O Better Auth gerencia automaticamente as rotas /api/auth/*
-  // incluindo /forget-password e /reset-password
 });
 
-export type Session = typeof auth.$Infer.Session.session;
-export type User = typeof auth.$Infer.Session.user;
+export type AuthSession = typeof auth.$Infer.Session.session;
+export type AuthUser = typeof auth.$Infer.Session.user;
+export type AuthOrganization = typeof auth.$Infer.Organization;
+export type AuthActiveOrganization = typeof auth.$Infer.ActiveOrganization;
+export type AuthMember = typeof auth.$Infer.Member;
+export type AuthTeam = typeof auth.$Infer.Team;
+export type AuthTeamMember = typeof auth.$Infer.TeamMember;
+
+// Códigos de erro do Better Auth para comparação
+export const AUTH_ERROR_CODES = auth.$ERROR_CODES;
+export type AuthErrorCode = keyof typeof auth.$ERROR_CODES;

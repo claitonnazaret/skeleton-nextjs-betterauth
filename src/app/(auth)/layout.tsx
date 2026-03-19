@@ -1,12 +1,6 @@
 'use client';
 
 import {
-  Card,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/src/components/ui/card';
-import {
   AuthLayoutProvider,
   useAuthLayout,
 } from '@/src/context/auth-layout-context';
@@ -22,36 +16,34 @@ const routeConfig: Record<
 > = {
   '/sign-in': {
     icon: LogIn,
-    title: 'Login',
-    description: 'Faça login para acessar o conteúdo exclusivo do nosso site.',
+    title: 'Bem-vindo de volta',
+    description: 'Faça login na sua conta para continuar',
   },
   '/sign-up': {
     icon: UserPlus,
-    title: 'Cadastre-se',
-    description:
-      'Crie uma conta para acessar o conteúdo exclusivo do nosso site.',
+    title: 'Criar uma conta',
+    description: 'Insira suas informações para começar',
   },
   '/forgot-password': {
     icon: Mail,
-    title: 'Esqueci Minha Senha',
-    description:
-      'Digite seu email e enviaremos um link para redefinir sua senha',
+    title: 'Esqueceu sua senha?',
+    description: 'Digite seu email para receber o link de redefinição',
   },
   '/reset-password': {
     icon: KeyRound,
-    title: 'Redefinir Senha',
-    description: 'Digite sua nova senha',
+    title: 'Redefinir senha',
+    description: 'Digite sua nova senha abaixo',
   },
   '/verify-email': {
     icon: CheckCircle,
-    title: 'Verificação de Email',
-    description: 'Verificando seu email...',
+    title: 'Verificar email',
+    description: 'Verificando seu endereço de email...',
   },
 };
 
 function AuthLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { icon: Icon, title, description, setHeader } = useAuthLayout();
+  const { title, description, setHeader } = useAuthLayout();
 
   // Define header padrão baseado na rota
   useEffect(() => {
@@ -62,20 +54,50 @@ function AuthLayoutContent({ children }: { children: React.ReactNode }) {
   }, [pathname, setHeader]);
 
   return (
-    <div className="flex h-screen flex-col items-center justify-center">
-      <div className="w-full max-w-xs">
-        <Card className="w-full sm:max-w-lg">
-          <CardHeader className="text-center">
-            {Icon && (
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-linear-to-br from-purple-500 to-blue-500">
-                <Icon className="h-8 w-8 text-white" />
-              </div>
+    <div className="container relative min-h-screen flex-col items-center justify-center grid lg:max-w-none lg:grid-cols-2 lg:px-0">
+      {/* Lado Esquerdo - Banner/Imagem */}
+      <div className="relative hidden h-full flex-col bg-muted p-10 text-white dark:border-r lg:flex">
+        <div className="absolute inset-0 bg-linear-to-br from-purple-600 via-blue-600 to-indigo-700" />
+        <div className="relative z-20 flex items-center text-lg font-medium">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="mr-2 h-6 w-6"
+          >
+            <path d="M15 6v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3" />
+          </svg>
+          Acme Inc
+        </div>
+        <div className="relative z-20 mt-auto">
+          <blockquote className="space-y-2">
+            <p className="text-lg">
+              &ldquo;Esta plataforma revolucionou a forma como gerenciamos
+              nossos projetos e equipes. A interface intuitiva e os recursos
+              poderosos nos ajudaram a aumentar nossa produtividade.&rdquo;
+            </p>
+            <footer className="text-sm">Sofia Davis</footer>
+          </blockquote>
+        </div>
+      </div>
+
+      {/* Lado Direito - Formulário */}
+      <div className="lg:p-8">
+        <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-112.5">
+          <div className="flex flex-col space-y-2 text-center">
+            {title && (
+              <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
             )}
-            {title && <CardTitle className="text-2xl">{title}</CardTitle>}
-            {description && <CardDescription>{description}</CardDescription>}
-          </CardHeader>
+            {description && (
+              <p className="text-sm text-muted-foreground">{description}</p>
+            )}
+          </div>
           {children}
-        </Card>
+        </div>
       </div>
     </div>
   );

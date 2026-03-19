@@ -2,18 +2,28 @@
 
 import { InputFormField, PasswordFormField } from '@/src/components/forms';
 import { Button } from '@/src/components/ui/button';
-import { CardContent, CardFooter } from '@/src/components/ui/card';
 import { authClient } from '@/src/lib/auth-client';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { ChangeEvent, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
 const formSchema = z
   .object({
+    // Dados da Empresa/Organization
+    organizationName: z
+      .string()
+      .min(2, { message: 'Nome da empresa deve ter no mínimo 2 caracteres' }),
+    organizationSlug: z
+      .string()
+      .min(2, { message: 'Identificador deve ter no mínimo 2 caracteres' })
+      .regex(/^[a-z0-9-]+$/, {
+        message: 'Apenas letras minúsculas, números e hífens',
+      }),
+    // Dados do Usuário
     name: z
       .string()
       .min(2, { message: 'Nome deve ter no mínimo 2 caracteres' }),
@@ -32,40 +42,104 @@ const formSchema = z
 
 export default function Page() {
   const [loading, setLoading] = useState(false);
+  const [isUserExists, setIsUserExists] = useState(false);
+
   const router = useRouter();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: '',
-      email: '',
-      password: '',
-      confirmPassword: '',
+      organizationName: 'Clinica Sorriso',
+      organizationSlug: 'clinica-sorriso',
+      name: 'Claiton Nazaret',
+      email: 'claitonnazaret@gmail.com',
+      password: '12345678',
+      confirmPassword: '12345678',
     },
   });
+
+  const handleOrganizationNameChange = (
+    e: ChangeEvent<HTMLInputElement, HTMLInputElement>
+  ) => {
+    // Gerar slug automaticamente do nome da organização
+    const value = e.target.value;
+    const slug = value
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '') // Remove acentos
+      .replace(/[^a-z0-9]+/g, '-') // Substitui caracteres especiais por hífens
+      .replace(/^-+|-+$/g, ''); // Remove hífens do início e fim
+    form.setValue('organizationSlug', slug);
+  };
 
   async function handleSignUp({
     name,
     email,
     password,
+    organizationName,
+    organizationSlug,
   }: z.infer<typeof formSchema>) {
     try {
       setLoading(true);
-      const { data, error } = await authClient.signUp.email({
-        name,
-        email,
-        password,
-        callbackURL: '/verify-email',
-      });
+      // 1. Criar usuário (com auto-login habilitado)
+      const { data: userData, error: signUpError } =
+        await authClient.signUp.email({
+          name,
+          email,
+          password,
+          callbackURL: '/verify-email', // Redireciona para página de verificação
+        });
 
-      if (error) {
-        toast.error(error.message || 'Erro ao realizar cadastro');
+      if (signUpError || !userData) {
+        console.error(
+          'Erro no sign-up:',
+          signUpError?.code,
+          signUpError?.message
+        );
+
+        // Se usuário já existe, tenta fazer login
+        if (signUpError?.code === 'USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL') {
+          toast.info('Usuário já existe. Fazendo login...');
+          setIsUserExists(true);
+          const { data: userSession, error: signInError } =
+            await authClient.signIn.email({
+              email,
+              password,
+            });
+
+          if (signInError || !userSession) {
+            setIsUserExists(false);
+            toast.error('Erro ao fazer login. Verifique suas credenciais.');
+            return;
+          }
+          // Se login bem-sucedido, continua o fluxo (criar organização)
+        } else {
+          toast.error(signUpError?.message || 'Erro ao realizar cadastro');
+          return;
+        }
+      }
+
+      // 2. Criar organização (usuário já está autenticado)
+      const { data: orgData, error: orgError } =
+        await authClient.organization.create({
+          name: organizationName,
+          slug: organizationSlug,
+        });
+
+      if (orgError || !orgData) {
+        console.error('Erro ao criar organização:', orgError);
+        toast.error(orgError?.message || 'Erro ao criar empresa');
         return;
       }
 
-      if (data) {
-        toast.success('Verifique seu e-mail para ativar sua conta 📩');
-        router.push('/sign-in');
+      // 3. Definir organização como ativa
+      await authClient.organization.setActive({
+        organizationId: orgData.id,
+      });
+      if (!isUserExists) {
+        toast.success('Conta criada com sucesso! Verifique seu e-mail 📩');
+      } else {
+        router.push(`/${organizationSlug}/`);
       }
     } catch (error) {
       toast.error('Erro inesperado ao realizar cadastro');
@@ -76,13 +150,37 @@ export default function Page() {
   }
 
   return (
-    <>
-      <CardContent>
-        <FormProvider {...form}>
-          <form
-            onSubmit={form.handleSubmit(handleSignUp)}
-            className="flex flex-col gap-6"
-          >
+    <div className="grid gap-6">
+      <FormProvider {...form}>
+        <form onSubmit={form.handleSubmit(handleSignUp)} className="grid gap-4">
+          {/* Seção: Dados da Empresa */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-medium text-muted-foreground">
+              Dados da Empresa
+            </h3>
+            <InputFormField
+              control={form.control}
+              name="organizationName"
+              label="Nome da Empresa"
+              placeholder="Minha Empresa Ltda"
+              required
+              onChange={(e) => handleOrganizationNameChange(e)}
+            />
+            <InputFormField
+              control={form.control}
+              name="organizationSlug"
+              label="Identificador único"
+              placeholder="minha-empresa"
+              description="Será usado na URL da empresa"
+              required
+            />
+          </div>
+
+          {/* Seção: Dados do Usuário */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-medium text-muted-foreground">
+              Seus Dados
+            </h3>
             <InputFormField
               control={form.control}
               name="name"
@@ -102,30 +200,30 @@ export default function Page() {
               control={form.control}
               name="password"
               label="Senha"
-              placeholder="••••••••"
               required
             />
             <PasswordFormField
               control={form.control}
               name="confirmPassword"
               label="Confirmar senha"
-              placeholder="••••••••"
               required
             />
-            <Button type="submit" disabled={loading} className="w-full">
-              {loading ? 'Cadastrando...' : 'Cadastrar'}
-            </Button>
-          </form>
-        </FormProvider>
-      </CardContent>
-      <CardFooter className="flex flex-col gap-2">
-        <p className="text-sm text-muted-foreground text-center">
-          Já tem uma conta?{' '}
-          <Link href="/sign-in" className="text-primary hover:underline">
-            Faça login
-          </Link>
-        </p>
-      </CardFooter>
-    </>
+          </div>
+
+          <Button type="submit" disabled={loading} className="w-full">
+            {loading ? 'Criando conta...' : 'Cadastrar'}
+          </Button>
+        </form>
+      </FormProvider>
+      <div className="text-center text-sm text-muted-foreground">
+        Já tem uma conta?{' '}
+        <Link
+          href="/sign-in"
+          className="underline underline-offset-4 hover:text-primary"
+        >
+          Faça login
+        </Link>
+      </div>
+    </div>
   );
 }

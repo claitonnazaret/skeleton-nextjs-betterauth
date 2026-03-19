@@ -7,6 +7,7 @@ import {
   FieldError,
   FieldLabel,
 } from '@/src/components/ui/field';
+import type React from 'react';
 import {
   Controller,
   type Control,
@@ -17,33 +18,38 @@ import {
 interface MaskFormFieldProps<
   TFieldValues extends FieldValues = FieldValues,
   TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
-> {
+> extends Omit<React.ComponentProps<'input'>, 'name' | 'id'> {
+  // Props do React Hook Form
   control: Control<TFieldValues>;
   name: TName;
+  // Props específicas do componente
   label?: string;
-  placeholder?: string;
   description?: string;
   mask: string;
   maskPlaceholder?: string;
-  disabled?: boolean;
   required?: boolean;
-  className?: string;
 }
 
 export function MaskFormField<
   TFieldValues extends FieldValues = FieldValues,
   TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
 >({
+  // Props do React Hook Form
   control,
   name,
+  // Props específicas do componente
   label,
-  placeholder,
   description,
   mask,
   maskPlaceholder = '_',
-  disabled = false,
   required = false,
+  // Props do input nativo
   className,
+  placeholder,
+  disabled = false,
+  onChange,
+  onBlur,
+  ...inputProps // Todas as outras props do input HTML
 }: MaskFormFieldProps<TFieldValues, TName>) {
   return (
     <Controller
@@ -59,12 +65,21 @@ export function MaskFormField<
           )}
           <InputMasked
             {...field}
+            {...inputProps}
             id={field.name}
             mask={mask}
             maskPlaceholder={maskPlaceholder}
             placeholder={placeholder}
             disabled={disabled}
             aria-invalid={fieldState.invalid}
+            onChange={(e) => {
+              field.onChange(e);
+              onChange?.(e);
+            }}
+            onBlur={(e) => {
+              field.onBlur();
+              onBlur?.(e);
+            }}
           />
           {description && <FieldDescription>{description}</FieldDescription>}
           {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
