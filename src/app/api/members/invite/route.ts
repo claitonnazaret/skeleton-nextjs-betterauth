@@ -35,7 +35,6 @@ export async function POST(request: NextRequest) {
   }
 
   // 4. Verifica se o usuário já é membro
-  // @ts-expect-error - Prisma client will have these models after db:generate
   const existingMember = await prisma.member.findFirst({
     where: {
       organizationId: authResult.organization.id,
@@ -53,7 +52,6 @@ export async function POST(request: NextRequest) {
   }
 
   // 5. Verifica se já existe convite pendente
-  // @ts-expect-error - Prisma client will have these models after db:generate
   const existingInvitation = await prisma.invitation.findFirst({
     where: {
       organizationId: authResult.organization.id,
@@ -69,7 +67,6 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // @ts-expect-error - Prisma client will have these models after db:generate
   // 6. Cria o convite
   const invitation = await prisma.invitation.create({
     data: {
@@ -78,7 +75,7 @@ export async function POST(request: NextRequest) {
       email: email,
       role: role,
       status: 'pending',
-      inviterId: authResult.session.user.id,
+      inviterId: authResult.session.userId,
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 dias
     },
   });
@@ -115,7 +112,6 @@ export async function GET() {
     return authResult.response;
   }
 
-  // @ts-expect-error - Prisma client will have these models after db:generate
   const invitations = await prisma.invitation.findMany({
     where: {
       organizationId: authResult.organization.id,
@@ -126,7 +122,6 @@ export async function GET() {
   });
 
   return NextResponse.json({
-    // @ts-expect-error - Prisma types not yet generated
     invitations: invitations.map((inv) => ({
       id: inv.id,
       email: inv.email,
