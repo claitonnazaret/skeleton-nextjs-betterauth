@@ -131,6 +131,55 @@ export default function MyPage() {
   - Secundária: Geist Sans (--font-geist-sans)
   - Mono: Geist Mono (--font-geist-mono)
 
+### Responsividade e Layout
+
+**OBRIGATÓRIO: Toda alteração de layout DEVE respeitar responsividade**
+
+1. **Mobile-first**: Sempre desenvolva pensando primeiro em dispositivos móveis
+2. **Breakpoints do Tailwind**:
+   - `sm`: 640px (tablets pequenos)
+   - `md`: 768px (tablets)
+   - `lg`: 1024px (laptops)
+   - `xl`: 1280px (desktops)
+   - `2xl`: 1536px (telas grandes)
+
+3. **Use componentes shadcn/ui**:
+   - ✅ **SEMPRE** prefira componentes do shadcn/ui antes de criar customizados
+   - ✅ Use `Card`, `Dialog`, `Sheet`, `Drawer` para containers
+   - ✅ Use `Button`, `Input`, `Select` para controles
+   - ✅ Consulte [shadcn/ui docs](https://ui.shadcn.com) antes de implementar
+
+4. **Classes responsivas obrigatórias**:
+
+   ```typescript
+   // ❌ EVITE: Classes fixas sem responsividade
+   <div className="w-96 h-64">
+
+   // ✅ CORRETO: Classes responsivas
+   <div className="w-full md:w-96 h-auto md:h-64">
+
+   // ✅ CORRETO: Grid responsivo
+   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+
+   // ✅ CORRETO: Padding responsivo
+   <div className="p-4 md:p-6 lg:p-8">
+   ```
+
+5. **Componentes responsivos para mobile**:
+   - Use `Sheet` ou `Drawer` do shadcn para menus laterais em mobile
+   - Use `Dialog` para modais que se adaptam ao tamanho da tela
+   - Use `Accordion` ou `Collapsible` para economizar espaço vertical
+
+6. **Testes de responsividade obrigatórios**:
+   - ✅ Mobile (320px - 640px)
+   - ✅ Tablet (640px - 1024px)
+   - ✅ Desktop (1024px+)
+
+7. **Overflow e Scroll**:
+   - Páginas de autenticação: `h-screen overflow-hidden` (sem scroll na viewport)
+   - Páginas internas: permitir scroll natural (`min-h-screen`)
+   - Usar `overflow-auto` ou `overflow-y-auto` para scroll controlado
+
 ### Importações de Componentes
 
 ```typescript
