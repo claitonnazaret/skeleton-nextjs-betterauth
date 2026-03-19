@@ -150,67 +150,72 @@ export default function Page() {
   }
 
   return (
-    <div className="grid gap-6">
+    <div className="grid gap-4">
       <FormProvider {...form}>
-        <form onSubmit={form.handleSubmit(handleSignUp)} className="grid gap-4">
+        <form onSubmit={form.handleSubmit(handleSignUp)} className="grid gap-3">
           {/* Seção: Dados da Empresa */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-medium text-muted-foreground">
+          <div className="space-y-2">
+            <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
               Dados da Empresa
             </h3>
-            <InputFormField
-              control={form.control}
-              name="organizationName"
-              label="Nome da Empresa"
-              placeholder="Minha Empresa Ltda"
-              required
-              onChange={(e) => handleOrganizationNameChange(e)}
-            />
-            <InputFormField
-              control={form.control}
-              name="organizationSlug"
-              label="Identificador único"
-              placeholder="minha-empresa"
-              description="Será usado na URL da empresa"
-              required
-            />
+            <div className="space-y-3">
+              <InputFormField
+                control={form.control}
+                name="organizationName"
+                label="Nome da Empresa"
+                placeholder="Minha Empresa Ltda"
+                required
+                onChange={(e) => handleOrganizationNameChange(e)}
+              />
+              <InputFormField
+                control={form.control}
+                name="organizationSlug"
+                label="Identificador"
+                placeholder="minha-empresa"
+                required
+              />
+            </div>
           </div>
 
           {/* Seção: Dados do Usuário */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-medium text-muted-foreground">
+          <div className="space-y-2">
+            <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
               Seus Dados
             </h3>
-            <InputFormField
-              control={form.control}
-              name="name"
-              label="Nome completo"
-              placeholder="Seu nome"
-              required
-            />
-            <InputFormField
-              control={form.control}
-              name="email"
-              label="Email"
-              type="email"
-              placeholder="seu@email.com"
-              required
-            />
-            <PasswordFormField
-              control={form.control}
-              name="password"
-              label="Senha"
-              required
-            />
-            <PasswordFormField
-              control={form.control}
-              name="confirmPassword"
-              label="Confirmar senha"
-              required
-            />
+            <div className="space-y-3">
+              <InputFormField
+                control={form.control}
+                name="name"
+                label="Nome completo"
+                placeholder="Seu nome"
+                required
+              />
+              <InputFormField
+                control={form.control}
+                name="email"
+                label="Email"
+                type="email"
+                placeholder="seu@email.com"
+                required
+              />
+              <div className="grid grid-cols-2 gap-3">
+                <PasswordFormField
+                  control={form.control}
+                  name="password"
+                  label="Senha"
+                  required
+                />
+                <PasswordFormField
+                  control={form.control}
+                  name="confirmPassword"
+                  label="Confirmar"
+                  required
+                />
+              </div>
+            </div>
           </div>
 
-          <Button type="submit" disabled={loading} className="w-full">
+          <Button type="submit" disabled={loading} className="w-full mt-2">
             {loading ? 'Criando conta...' : 'Cadastrar'}
           </Button>
         </form>
