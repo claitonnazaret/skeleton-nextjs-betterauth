@@ -27,10 +27,13 @@ const formSchema = z
     name: z
       .string()
       .min(2, { message: 'Nome deve ter no mínimo 2 caracteres' }),
-    email: z.string().email({ message: 'Email inválido' }),
+    email: z.email({ message: 'Email inválido' }),
     password: z
       .string()
-      .min(8, { message: 'Senha deve ter no mínimo 8 caracteres' }),
+      .min(8, { message: 'A senha deve ter pelo menos 8 caracteres' })
+      .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, {
+        message: 'A senha deve conter letras maiúsculas, minúsculas e números',
+      }),
     confirmPassword: z
       .string()
       .min(8, { message: 'Confirmação de senha obrigatória' }),
@@ -49,12 +52,12 @@ export default function Page() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      organizationName: 'Clinica Sorriso',
-      organizationSlug: 'clinica-sorriso',
-      name: 'Claiton Nazaret',
-      email: 'claitonnazaret@gmail.com',
-      password: '12345678',
-      confirmPassword: '12345678',
+      organizationName: '',
+      organizationSlug: '',
+      name: '',
+      email: '',
+      password: '',
+      confirmPassword: '',
     },
   });
 
