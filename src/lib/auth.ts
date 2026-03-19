@@ -2,11 +2,20 @@ import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { nextCookies } from 'better-auth/next-js';
 import { organization } from 'better-auth/plugins';
+import * as process from 'node:process';
 import { sendPasswordResetEmail, sendVerificationEmail } from './email/resend';
 import prisma from './prisma';
 
+const { VERCEL_BRANCH_URL, VERCEL_URL, BETTER_AUTH_URL } = process.env;
+
+const BASE_URL_VAR = VERCEL_BRANCH_URL
+  ? `https://${VERCEL_BRANCH_URL}`
+  : VERCEL_URL
+    ? `https://${VERCEL_URL}`
+    : BETTER_AUTH_URL || 'http://localhost:3000';
+
 export const auth = betterAuth({
-  baseURL: process.env.BETTER_AUTH_URL || 'http://localhost:3000',
+  baseURL: BASE_URL_VAR,
   database: prismaAdapter(prisma, {
     provider: 'postgresql',
   }),
