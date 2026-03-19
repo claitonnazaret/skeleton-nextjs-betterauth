@@ -72,32 +72,39 @@ export default function Page() {
       return;
     }
 
-    await fetch(
-      `/api/organization/getOrganizationByEmail?email=${encodeURIComponent(email)}`
-    )
-      .then((res) => res.json())
-      .then((res) => {
-        if (Array.isArray(res.organizations) && res.organizations.length > 0) {
-          if (res.organizations > 1) {
-            setOrganizations(res.organizations || []);
-          } else {
-            toast.info(`Vinculado a uma empresa: ${res.organizations[0].name}`);
-            form.setValue('organization', {
-              label: res.organizations[0].name,
-              value: res.organizations[0].id,
-              description: res.organizations[0].role
-                ? ROLE_LABELS[
-                    res.organizations[0].role as keyof typeof ROLE_LABELS
-                  ]
-                : '',
-            });
+    toast.promise(
+      fetch(
+        `/api/organization/getOrganizationByEmail?email=${encodeURIComponent(email)}`
+      ).then(async (res) => res.json()),
+      {
+        loading: 'Buscando empresas vinculadas...',
+        success: (res: { organizations: Organization[] }) => {
+          if (
+            Array.isArray(res.organizations) &&
+            res.organizations.length > 0
+          ) {
+            if (res.organizations.length > 1) {
+              setOrganizations(res.organizations || []);
+              return `${res.organizations.length} empresas encontradas`;
+            } else {
+              const { id: value, name: label, role } = res.organizations[0];
+              form.setValue('organization', {
+                label,
+                value,
+                description:
+                  role && ROLE_LABELS[role as keyof typeof ROLE_LABELS],
+              });
+              return `Vinculado a: ${res.organizations[0].name}`;
+            }
           }
-        }
-      })
-      .catch((error) => {
-        toast.error('Erro ao buscar empresas vinculadas a este email');
-        console.error('Erro ao buscar organizações:', error);
-      });
+          return 'Nenhuma empresa vinculada a este usuário';
+        },
+        error: (err: Error) => {
+          console.error('Erro ao buscar organizações:', err);
+          return 'Erro ao buscar empresas vinculadas a este email';
+        },
+      }
+    );
   }
 
   async function handleCredentials({
@@ -106,9 +113,6 @@ export default function Page() {
     rememberMe,
     organization,
   }: z.infer<typeof formSchema>) {
-    toast.error(
-      `Email: ${form.watch('email')}, Organização: ${form.watch('organization')?.label}`
-    );
     try {
       if (organizations && organizations.length > 1 && !organization) {
         form.setError('organization', {
