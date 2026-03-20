@@ -13,7 +13,7 @@ import { ROLE_LABELS } from '@/src/lib/permissions';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { FocusEvent, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -60,51 +60,46 @@ export default function Page() {
     },
   });
 
-  async function handleOrganizations() {
-    const { email } = form.watch();
+  async function handleOrganizations(event: FocusEvent<HTMLInputElement>) {
+    const email = event.target.value;
 
     setOrganizations([]);
 
-    if (!email || !formSchema.shape.email.safeParse(email).success) {
-      toast.error(
-        'Por favor, insira um email válido para buscar empresas vinculadas'
-      );
-      return;
-    }
-
-    toast.promise(
-      fetch(
-        `/api/organization/getOrganizationByEmail?email=${encodeURIComponent(email)}`
-      ).then(async (res) => res.json()),
-      {
-        loading: 'Buscando empresas vinculadas...',
-        success: (res: { organizations: Organization[] }) => {
-          if (
-            Array.isArray(res.organizations) &&
-            res.organizations.length > 0
-          ) {
-            if (res.organizations.length > 1) {
-              setOrganizations(res.organizations || []);
-              return `${res.organizations.length} empresas encontradas`;
-            } else {
-              const { id: value, name: label, role } = res.organizations[0];
-              form.setValue('organization', {
-                label,
-                value,
-                description:
-                  role && ROLE_LABELS[role as keyof typeof ROLE_LABELS],
-              });
-              return `Vinculado a: ${res.organizations[0].name}`;
+    if (email !== '' && !form.formState.errors.email) {
+      toast.promise(
+        fetch(
+          `/api/organization/getOrganizationByEmail?email=${encodeURIComponent(email)}`
+        ).then(async (res) => res.json()),
+        {
+          loading: 'Buscando empresas vinculadas...',
+          success: (res: { organizations: Organization[] }) => {
+            if (
+              Array.isArray(res.organizations) &&
+              res.organizations.length > 0
+            ) {
+              if (res.organizations.length > 1) {
+                setOrganizations(res.organizations || []);
+                return `Você pertence a ${res.organizations.length} empresas. Selecione uma empresa para continuar.`;
+              } else {
+                const { id: value, name: label, role } = res.organizations[0];
+                form.setValue('organization', {
+                  label,
+                  value,
+                  description:
+                    role && ROLE_LABELS[role as keyof typeof ROLE_LABELS],
+                });
+                return `Vinculado a: ${res.organizations[0].name}`;
+              }
             }
-          }
-          return 'Nenhuma empresa vinculada a este usuário';
-        },
-        error: (err: Error) => {
-          console.error('Erro ao buscar organizações:', err);
-          return 'Erro ao buscar empresas vinculadas a este email';
-        },
-      }
-    );
+            return 'Nenhuma empresa vinculada a este usuário';
+          },
+          error: (err: Error) => {
+            console.error('Erro ao buscar organizações:', err);
+            return 'Erro ao buscar empresas vinculadas a este email';
+          },
+        }
+      );
+    }
   }
 
   async function handleCredentials({

@@ -264,3 +264,12 @@ export async function requireAuth(): Promise<
     session,
   };
 }
+
+// export function getErrorMessage(error: unknown) {
+//   const errorMessages: Record<string, string> = {
+//     USER_NOT_FOUND: 'E-mail ou senha incorretos.',
+//     USER_ALREADY_EXISTS: 'Este e-mail já está cadastrado.',
+//     INVALID_EMAIL: 'Por favor, insira um e-mail válido.',
+//   };
+//   return errorMessages[error] || 'Ocorreu um erro inesperado.';
+// }

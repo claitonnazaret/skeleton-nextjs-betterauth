@@ -5,7 +5,7 @@
 'use client';
 
 import { authClient } from '@/src/lib/auth-client';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 export type ActiveOrganization = {
   id: string;
@@ -27,6 +27,19 @@ export type OrganizationMember = {
 export type UserOrganization = ActiveOrganization & {
   role: string;
 };
+
+type Organization = {
+  memberSince: Date;
+  memberId: string;
+} & UserOrganization;
+
+interface UseUserOrganizationsResult {
+  organizations: Organization[];
+  loading: boolean;
+  error: string | null;
+  total: number;
+  refetch: () => Promise<void>;
+}
 
 /**
  * Hook para acessar a organization ativa do usuário
@@ -51,11 +64,46 @@ export function useActiveOrganization() {
     null
   );
   const [loading, setLoading] = useState(true);
+  const { data: session } = authClient.useSession();
 
-  const fetchActiveOrganization = async () => {
+  useEffect(() => {
+    const fetchActiveOrganization = async () => {
+      try {
+        // Busca a organization ativa
+        const { data: activeOrg, error: activeError } =
+          await authClient.organization.getFullOrganization();
+
+        if (activeError || !activeOrg) {
+          setOrganization(null);
+          setLoading(false);
+          return;
+        }
+
+        // Busca o role do usuário atual nos members da organization
+        const currentUserId = session?.user?.id;
+        const userMember = activeOrg.members?.find(
+          (member: { userId: string }) => member.userId === currentUserId
+        ) as { role?: string } | undefined;
+
+        setOrganization({
+          ...activeOrg,
+          role: userMember?.role || 'member',
+        } as UserOrganization);
+        setLoading(false);
+      } catch (error) {
+        console.error('Erro ao buscar organization ativa:', error);
+        setOrganization(null);
+        setLoading(false);
+      }
+    };
+
+    fetchActiveOrganization();
+  }, [session?.user?.id]);
+
+  const refetch = useCallback(async () => {
+    setLoading(true);
+
     try {
-      setLoading(true);
-
       // Busca a organization ativa
       const { data: activeOrg, error: activeError } =
         await authClient.organization.getFullOrganization();
@@ -65,27 +113,15 @@ export function useActiveOrganization() {
         return;
       }
 
-      // Busca o role do usuário nesta organization
-      const { data: listData } = await authClient.organization.list();
-
-      // Better Auth pode retornar array direto ou objeto com propriedade organizations
-      let orgsList: unknown[] = [];
-      if (Array.isArray(listData)) {
-        orgsList = listData;
-      } else if (listData && typeof listData === 'object') {
-        const dataObj = listData as Record<string, unknown>;
-        if (Array.isArray(dataObj.organizations)) {
-          orgsList = dataObj.organizations;
-        }
-      }
-
-      const userOrg = orgsList.find(
-        (org: unknown) => (org as { id: string }).id === activeOrg.id
+      // Busca o role do usuário atual nos members da organization
+      const currentUserId = session?.user?.id;
+      const userMember = activeOrg.members?.find(
+        (member: { userId: string }) => member.userId === currentUserId
       ) as { role?: string } | undefined;
 
       setOrganization({
         ...activeOrg,
-        role: userOrg?.role || 'member',
+        role: userMember?.role || 'member',
       } as UserOrganization);
     } catch (error) {
       console.error('Erro ao buscar organization ativa:', error);
@@ -93,70 +129,39 @@ export function useActiveOrganization() {
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    fetchActiveOrganization();
-  }, []);
+  }, [session?.user?.id]);
 
   return {
     organization,
     loading,
-    refetch: fetchActiveOrganization,
+    refetch,
   };
 }
 
-/**
- * Hook para listar todas as organizations do usuário
- *
- * @returns {Object} Objeto contendo:
- *   - organizations: Array de organizations do usuário
- *   - loading: Estado de carregamento
- *   - refetch: Função para recarregar os dados
- *
- * @example
- * function OrgSwitcher() {
- *   const { organizations, loading } = useUserOrganizations();
- *
- *   return (
- *     <select>
- *       {organizations.map(org => (
- *         <option key={org.id} value={org.id}>{org.name}</option>
- *       ))}
- *     </select>
- *   );
- * }
- */
-export function useUserOrganizations() {
-  const [organizations, setOrganizations] = useState<UserOrganization[]>([]);
+export function useUserOrganizations(): UseUserOrganizationsResult {
+  const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [total, setTotal] = useState(0);
 
   const fetchOrganizations = async () => {
     try {
       setLoading(true);
+      setError(null);
 
-      const { data, error } = await authClient.organization.list();
+      const response = await fetch('/api/organization/getUserOrganizations');
 
-      if (error || !data) {
-        setOrganizations([]);
-        return;
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Erro ao buscar organizações');
       }
 
-      // Better Auth pode retornar array direto ou objeto com propriedade organizations
-      let orgs: unknown[] = [];
-      if (Array.isArray(data)) {
-        orgs = data;
-      } else if (data && typeof data === 'object') {
-        const dataObj = data as Record<string, unknown>;
-        if (Array.isArray(dataObj.organizations)) {
-          orgs = dataObj.organizations;
-        }
-      }
-
-      setOrganizations(orgs as UserOrganization[]);
-    } catch (error) {
-      console.error('Erro ao buscar organizations:', error);
-      setOrganizations([]);
+      const data = await response.json();
+      setOrganizations(data.organizations || []);
+      setTotal(data.total || 0);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro desconhecido');
+      console.error('Erro ao buscar organizações:', err);
     } finally {
       setLoading(false);
     }
@@ -169,6 +174,8 @@ export function useUserOrganizations() {
   return {
     organizations,
     loading,
+    error,
+    total,
     refetch: fetchOrganizations,
   };
 }
