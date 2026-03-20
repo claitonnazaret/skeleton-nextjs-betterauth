@@ -42,7 +42,6 @@ import { NavOrganization } from './nav-organization';
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   organizationSlug: string;
-  organizationName: string;
 }
 
 /**
@@ -51,11 +50,7 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
  * - Menu com scroll próprio
  * - Footer fixo com menu do usuário
  */
-export function AppSidebar({
-  organizationSlug,
-  organizationName,
-  ...props
-}: AppSidebarProps) {
+export function AppSidebar({ organizationSlug, ...props }: AppSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { data: session } = authClient.useSession();

@@ -3,7 +3,6 @@
 import { Button } from '@/src/components/ui/button';
 import { SidebarTrigger } from '@/src/components/ui/sidebar';
 import { BellIcon } from 'lucide-react';
-import { useTheme } from 'next-themes';
 import { ThemeSwitcher } from '../theme-switcher';
 import { AutoBreadcrumbs } from './auto-breadcrumbs';
 
@@ -19,12 +18,6 @@ interface DashboardHeaderProps {
  * - Botão de troca de tema
  */
 export function DashboardHeader({ title }: DashboardHeaderProps) {
-  const { resolvedTheme, setTheme } = useTheme();
-
-  const toggleTheme = () => {
-    setTheme(resolvedTheme === 'dark' ? 'light' : 'dark');
-  };
-
   return (
     <header className="z-10 flex shrink-0 flex-col border-b bg-background">
       <div className="flex h-16 items-center gap-2 px-4">

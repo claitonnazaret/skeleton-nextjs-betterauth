@@ -28,6 +28,19 @@ export type UserOrganization = ActiveOrganization & {
   role: string;
 };
 
+type Organization = {
+  memberSince: Date;
+  memberId: string;
+} & UserOrganization;
+
+interface UseUserOrganizationsResult {
+  organizations: Organization[];
+  loading: boolean;
+  error: string | null;
+  total: number;
+  refetch: () => Promise<void>;
+}
+
 /**
  * Hook para acessar a organization ativa do usuário
  *
@@ -125,99 +138,44 @@ export function useActiveOrganization() {
   };
 }
 
-/**
- * Hook para listar todas as organizations do usuário
- *
- * @returns {Object} Objeto contendo:
- *   - organizations: Array de organizations do usuário
- *   - loading: Estado de carregamento
- *   - refetch: Função para recarregar os dados
- *
- * @example
- * function OrgSwitcher() {
- *   const { organizations, loading } = useUserOrganizations();
- *
- *   return (
- *     <select>
- *       {organizations.map(org => (
- *         <option key={org.id} value={org.id}>{org.name}</option>
- *       ))}
- *     </select>
- *   );
- * }
- */
-export function useUserOrganizations() {
-  const [organizations, setOrganizations] = useState<UserOrganization[]>([]);
+export function useUserOrganizations(): UseUserOrganizationsResult {
+  const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [total, setTotal] = useState(0);
 
-  useEffect(() => {
-    const fetchOrganizations = async () => {
-      try {
-        const { data, error } = await authClient.organization.list();
-
-        if (error || !data) {
-          setOrganizations([]);
-          setLoading(false);
-          return;
-        }
-
-        // Better Auth pode retornar array direto ou objeto com propriedade organizations
-        let orgs: unknown[] = [];
-        if (Array.isArray(data)) {
-          orgs = data;
-        } else if (data && typeof data === 'object') {
-          const dataObj = data as Record<string, unknown>;
-          if (Array.isArray(dataObj.organizations)) {
-            orgs = dataObj.organizations;
-          }
-        }
-
-        setOrganizations(orgs as UserOrganization[]);
-        setLoading(false);
-      } catch (error) {
-        console.error('Erro ao buscar organizations:', error);
-        setOrganizations([]);
-        setLoading(false);
-      }
-    };
-
-    fetchOrganizations();
-  }, []);
-
-  const refetch = useCallback(async () => {
-    setLoading(true);
-
+  const fetchOrganizations = async () => {
     try {
-      const { data, error } = await authClient.organization.list();
+      setLoading(true);
+      setError(null);
 
-      if (error || !data) {
-        setOrganizations([]);
-        return;
+      const response = await fetch('/api/organization/getUserOrganizations');
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Erro ao buscar organizações');
       }
 
-      // Better Auth pode retornar array direto ou objeto com propriedade organizations
-      let orgs: unknown[] = [];
-      if (Array.isArray(data)) {
-        orgs = data;
-      } else if (data && typeof data === 'object') {
-        const dataObj = data as Record<string, unknown>;
-        if (Array.isArray(dataObj.organizations)) {
-          orgs = dataObj.organizations;
-        }
-      }
-
-      setOrganizations(orgs as UserOrganization[]);
-    } catch (error) {
-      console.error('Erro ao buscar organizations:', error);
-      setOrganizations([]);
+      const data = await response.json();
+      setOrganizations(data.organizations || []);
+      setTotal(data.total || 0);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro desconhecido');
+      console.error('Erro ao buscar organizações:', err);
     } finally {
       setLoading(false);
     }
+  };
+
+  useEffect(() => {
+    fetchOrganizations();
   }, []);
 
   return {
     organizations,
     loading,
-    refetch,
+    error,
+    total,
+    refetch: fetchOrganizations,
   };
 }

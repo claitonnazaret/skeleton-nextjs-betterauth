@@ -55,10 +55,7 @@ export default async function DashboardLayout({
   return (
     <SidebarProvider>
       {/* Sidebar ocupando toda lateral esquerda */}
-      <AppSidebar
-        organizationSlug={slug}
-        organizationName={organization.name}
-      />
+      <AppSidebar organizationSlug={slug} />
 
       {/* Conteúdo principal */}
       <SidebarInset className="flex h-screen flex-col">

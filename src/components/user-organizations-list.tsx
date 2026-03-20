@@ -15,7 +15,7 @@ import {
   CardTitle,
 } from '@/src/components/ui/card';
 import { Skeleton } from '@/src/components/ui/skeleton';
-import { useUserOrganizations } from '@/src/hooks/use-user-organizations';
+import { useUserOrganizations } from '@/src/hooks/use-active-organization';
 import { Building2, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 
@@ -122,7 +122,7 @@ export function UserOrganizationsList() {
             <Link key={org.id} href={`/${org.slug}`} className="block group">
               <div className="flex items-center gap-4 p-4 rounded-lg border hover:bg-accent transition-colors">
                 <Avatar className="h-12 w-12">
-                  <AvatarImage src={org.logo} alt={org.name} />
+                  <AvatarImage src={org.logo || ''} alt={org.name} />
                   <AvatarFallback>
                     {org.name.substring(0, 2).toUpperCase()}
                   </AvatarFallback>
