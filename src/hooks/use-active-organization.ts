@@ -5,7 +5,7 @@
 'use client';
 
 import { authClient } from '@/src/lib/auth-client';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 export type ActiveOrganization = {
   id: string;
@@ -51,8 +51,9 @@ export function useActiveOrganization() {
     null
   );
   const [loading, setLoading] = useState(true);
+  const { data: session } = authClient.useSession();
 
-  const fetchActiveOrganization = async () => {
+  const fetchActiveOrganization = useCallback(async () => {
     try {
       setLoading(true);
 
@@ -65,27 +66,15 @@ export function useActiveOrganization() {
         return;
       }
 
-      // Busca o role do usuário nesta organization
-      const { data: listData } = await authClient.organization.list();
-
-      // Better Auth pode retornar array direto ou objeto com propriedade organizations
-      let orgsList: unknown[] = [];
-      if (Array.isArray(listData)) {
-        orgsList = listData;
-      } else if (listData && typeof listData === 'object') {
-        const dataObj = listData as Record<string, unknown>;
-        if (Array.isArray(dataObj.organizations)) {
-          orgsList = dataObj.organizations;
-        }
-      }
-
-      const userOrg = orgsList.find(
-        (org: unknown) => (org as { id: string }).id === activeOrg.id
+      // Busca o role do usuário atual nos members da organization
+      const currentUserId = session?.user?.id;
+      const userMember = activeOrg.members?.find(
+        (member: { userId: string }) => member.userId === currentUserId
       ) as { role?: string } | undefined;
 
       setOrganization({
         ...activeOrg,
-        role: userOrg?.role || 'member',
+        role: userMember?.role || 'member',
       } as UserOrganization);
     } catch (error) {
       console.error('Erro ao buscar organization ativa:', error);
@@ -93,11 +82,11 @@ export function useActiveOrganization() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [session?.user?.id]);
 
   useEffect(() => {
     fetchActiveOrganization();
-  }, []);
+  }, [fetchActiveOrganization]);
 
   return {
     organization,

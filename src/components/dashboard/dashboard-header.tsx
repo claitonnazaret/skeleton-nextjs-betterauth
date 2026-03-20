@@ -4,7 +4,6 @@ import { Button } from '@/src/components/ui/button';
 import { SidebarTrigger } from '@/src/components/ui/sidebar';
 import { BellIcon, MoonIcon, SunIcon } from 'lucide-react';
 import { useTheme } from 'next-themes';
-import { Separator } from '../ui/separator';
 import { AutoBreadcrumbs } from './auto-breadcrumbs';
 
 interface DashboardHeaderProps {
@@ -30,7 +29,6 @@ export function DashboardHeader({ title }: DashboardHeaderProps) {
       <div className="flex h-16 items-center gap-2 px-4">
         {/* Trigger do Sidebar para mobile */}
         <SidebarTrigger className="-ms-1" />
-        <Separator orientation="vertical" className="h-full" />
 
         {/* Título e Breadcrumbs */}
         <div className="flex flex-1 flex-col gap-1">

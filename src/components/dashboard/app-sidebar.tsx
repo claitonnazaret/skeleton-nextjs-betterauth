@@ -29,13 +29,16 @@ import {
   ChevronUp,
   FolderIcon,
   HomeIcon,
+  LogOut,
   SettingsIcon,
   User2Icon,
   UsersIcon,
 } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import * as React from 'react';
+import { toast } from 'sonner';
+import { NavOrganization } from './nav-organization';
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   organizationSlug: string;
@@ -54,6 +57,7 @@ export function AppSidebar({
   ...props
 }: AppSidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const { data: session } = authClient.useSession();
 
   // Items do menu principal
@@ -81,7 +85,14 @@ export function AppSidebar({
   ];
 
   const handleSignOut = async () => {
-    await authClient.signOut();
+    toast.promise(authClient.signOut(), {
+      loading: 'Saindo...',
+      success: () => {
+        router.replace('/sign-in');
+        return 'Saída bem-sucedida!';
+      },
+      error: 'Erro ao sair, tente novamente',
+    });
   };
 
   // Iniciais do usuário para o avatar
@@ -97,27 +108,7 @@ export function AppSidebar({
     <Sidebar collapsible="icon" {...props}>
       {/* Header fixo do Sidebar */}
       <SidebarHeader className="border-b">
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton size="lg" asChild>
-              <Link href={`/${organizationSlug}`}>
-                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                  <span className="text-sm font-bold">
-                    {organizationName.charAt(0).toUpperCase()}
-                  </span>
-                </div>
-                <div className="grid flex-1 text-start text-sm leading-tight">
-                  <span className="truncate font-semibold">
-                    {organizationName}
-                  </span>
-                  <span className="truncate text-xs text-muted-foreground">
-                    Organização
-                  </span>
-                </div>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
+        <NavOrganization />
       </SidebarHeader>
 
       {/* Content com scroll próprio */}
@@ -193,6 +184,7 @@ export function AppSidebar({
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleSignOut}>
+                  <LogOut className="me-2 size-4" />
                   Sair
                 </DropdownMenuItem>
               </DropdownMenuContent>
