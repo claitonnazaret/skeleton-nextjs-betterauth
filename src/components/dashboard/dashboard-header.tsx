@@ -2,8 +2,9 @@
 
 import { Button } from '@/src/components/ui/button';
 import { SidebarTrigger } from '@/src/components/ui/sidebar';
-import { BellIcon, MoonIcon, SunIcon } from 'lucide-react';
+import { BellIcon } from 'lucide-react';
 import { useTheme } from 'next-themes';
+import { ThemeSwitcher } from '../theme-switcher';
 import { AutoBreadcrumbs } from './auto-breadcrumbs';
 
 interface DashboardHeaderProps {
@@ -50,20 +51,7 @@ export function DashboardHeader({ title }: DashboardHeaderProps) {
             <BellIcon className="size-4" />
           </Button>
 
-          {/* Botão de troca de tema */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-8"
-            onClick={toggleTheme}
-            aria-label="Alternar tema"
-          >
-            {resolvedTheme === 'dark' ? (
-              <SunIcon className="size-4" />
-            ) : (
-              <MoonIcon className="size-4" />
-            )}
-          </Button>
+          <ThemeSwitcher />
         </div>
       </div>
     </header>

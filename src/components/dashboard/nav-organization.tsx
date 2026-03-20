@@ -8,7 +8,6 @@ import { authClient } from '@/src/lib/auth-client';
 import { ROLE_LABELS } from '@/src/lib/permissions';
 import { ChevronsUpDown, FactoryIcon, HomeIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
 import { toast } from 'sonner';
 import {
   DropdownMenu,
@@ -31,7 +30,6 @@ export function NavOrganization() {
   const userOrganizations = useUserOrganizations();
   const { isMobile } = useSidebar();
   const router = useRouter();
-  const [switching, setSwitching] = useState(false);
 
   /**
    * Troca a organization ativa
@@ -41,39 +39,74 @@ export function NavOrganization() {
     slug: string
   ) => {
     // Se já está na organization atual, não faz nada
-    if (organizationId === organization?.id || switching) {
+    if (organizationId === organization?.id) {
       return;
     }
 
-    try {
-      setSwitching(true);
-      toast.info('Alternando empresa...');
+    toast.promise(
+      () =>
+        new Promise<{ message: string }>(async (resolve, reject) => {
+          const { error } = await authClient.organization.setActive({
+            organizationId,
+          });
 
-      // Troca a organization ativa no Better Auth
-      const { error } = await authClient.organization.setActive({
-        organizationId,
-      });
+          if (error) {
+            return reject(error.message || 'Erro ao alternar empresa');
+          }
 
-      if (error) {
-        toast.error(error.message || 'Erro ao alternar empresa');
-        return;
+          await refetch();
+          return resolve({ message: 'Empresa alternada com sucesso!' });
+        }),
+      {
+        loading: 'Aguarde...',
+        success: (res: { message: string }) => {
+          router.push(`/${slug}/`);
+          router.refresh();
+          return res.message;
+        },
+        error: (err) => toast.error(err || 'Erro ao alternar empresa'),
       }
-
-      // Recarrega os dados da nova organization
-      await refetch();
-
-      toast.success('Empresa alternada com sucesso!');
-
-      // Redireciona para a nova organization
-      router.push(`/${slug}/`);
-      router.refresh();
-    } catch (error) {
-      console.error('Erro ao trocar organization:', error);
-      toast.error('Erro ao alternar empresa');
-    } finally {
-      setSwitching(false);
-    }
+    );
   };
+
+  // const handleSwitchOrganization = async (
+  //   organizationId: string,
+  //   slug: string
+  // ) => {
+  //   // Se já está na organization atual, não faz nada
+  //   if (organizationId === organization?.id || switching) {
+  //     return;
+  //   }
+
+  //   try {
+  //     setSwitching(true);
+  //     toast.info('Alternando empresa...');
+
+  //     // Troca a organization ativa no Better Auth
+  //     const { error } = await authClient.organization.setActive({
+  //       organizationId,
+  //     });
+
+  //     if (error) {
+  //       toast.error(error.message || 'Erro ao alternar empresa');
+  //       return;
+  //     }
+
+  //     // Recarrega os dados da nova organization
+  //     await refetch();
+
+  //     toast.success('Empresa alternada com sucesso!');
+
+  //     // Redireciona para a nova organization
+  //     router.push(`/${slug}/`);
+  //     router.refresh();
+  //   } catch (error) {
+  //     console.error('Erro ao trocar organization:', error);
+  //     toast.error('Erro ao alternar empresa');
+  //   } finally {
+  //     setSwitching(false);
+  //   }
+  // };
 
   return (
     <SidebarMenu>
@@ -115,7 +148,7 @@ export function NavOrganization() {
                   <DropdownMenuItem
                     key={team.id}
                     onClick={() => handleSwitchOrganization(team.id, team.slug)}
-                    disabled={switching || isActive}
+                    disabled={isActive}
                     className="gap-2 p-2"
                   >
                     <div

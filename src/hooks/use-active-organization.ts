@@ -53,10 +53,44 @@ export function useActiveOrganization() {
   const [loading, setLoading] = useState(true);
   const { data: session } = authClient.useSession();
 
-  const fetchActiveOrganization = useCallback(async () => {
-    try {
-      setLoading(true);
+  useEffect(() => {
+    const fetchActiveOrganization = async () => {
+      try {
+        // Busca a organization ativa
+        const { data: activeOrg, error: activeError } =
+          await authClient.organization.getFullOrganization();
 
+        if (activeError || !activeOrg) {
+          setOrganization(null);
+          setLoading(false);
+          return;
+        }
+
+        // Busca o role do usuário atual nos members da organization
+        const currentUserId = session?.user?.id;
+        const userMember = activeOrg.members?.find(
+          (member: { userId: string }) => member.userId === currentUserId
+        ) as { role?: string } | undefined;
+
+        setOrganization({
+          ...activeOrg,
+          role: userMember?.role || 'member',
+        } as UserOrganization);
+        setLoading(false);
+      } catch (error) {
+        console.error('Erro ao buscar organization ativa:', error);
+        setOrganization(null);
+        setLoading(false);
+      }
+    };
+
+    fetchActiveOrganization();
+  }, [session?.user?.id]);
+
+  const refetch = useCallback(async () => {
+    setLoading(true);
+
+    try {
       // Busca a organization ativa
       const { data: activeOrg, error: activeError } =
         await authClient.organization.getFullOrganization();
@@ -84,14 +118,10 @@ export function useActiveOrganization() {
     }
   }, [session?.user?.id]);
 
-  useEffect(() => {
-    fetchActiveOrganization();
-  }, [fetchActiveOrganization]);
-
   return {
     organization,
     loading,
-    refetch: fetchActiveOrganization,
+    refetch,
   };
 }
 
@@ -120,10 +150,44 @@ export function useUserOrganizations() {
   const [organizations, setOrganizations] = useState<UserOrganization[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchOrganizations = async () => {
-    try {
-      setLoading(true);
+  useEffect(() => {
+    const fetchOrganizations = async () => {
+      try {
+        const { data, error } = await authClient.organization.list();
 
+        if (error || !data) {
+          setOrganizations([]);
+          setLoading(false);
+          return;
+        }
+
+        // Better Auth pode retornar array direto ou objeto com propriedade organizations
+        let orgs: unknown[] = [];
+        if (Array.isArray(data)) {
+          orgs = data;
+        } else if (data && typeof data === 'object') {
+          const dataObj = data as Record<string, unknown>;
+          if (Array.isArray(dataObj.organizations)) {
+            orgs = dataObj.organizations;
+          }
+        }
+
+        setOrganizations(orgs as UserOrganization[]);
+        setLoading(false);
+      } catch (error) {
+        console.error('Erro ao buscar organizations:', error);
+        setOrganizations([]);
+        setLoading(false);
+      }
+    };
+
+    fetchOrganizations();
+  }, []);
+
+  const refetch = useCallback(async () => {
+    setLoading(true);
+
+    try {
       const { data, error } = await authClient.organization.list();
 
       if (error || !data) {
@@ -149,15 +213,11 @@ export function useUserOrganizations() {
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    fetchOrganizations();
   }, []);
 
   return {
     organizations,
     loading,
-    refetch: fetchOrganizations,
+    refetch,
   };
 }

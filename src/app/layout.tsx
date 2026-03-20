@@ -40,7 +40,7 @@ export default function RootLayout({
         <ThemeProvider>
           <TooltipProvider>
             <main className="min-h-screen">{children}</main>
-            <Toaster position="top-center" />
+            <Toaster position="top-center" visibleToasts={1} />
           </TooltipProvider>
         </ThemeProvider>
       </body>
